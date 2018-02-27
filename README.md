@@ -1,6 +1,6 @@
 # jproconv
 Converter for Java Properties- and JSON-Files
 
-java -jar jproconv [-r] <source-dir> <target-dir>
+java -jar jproconv [-r] &lt;source-dir&gt; &lt;target-dir&gt;
 
-Converts either locale-*.json-files in <source-dir> to JAVA .properties-files in <target-dir> or reverses the operation.
+Converts either locale-*.json-files in &lt;source-dir&gt; to JAVA .properties-files in &lt;target-dir&gt; or reverses the operation.
