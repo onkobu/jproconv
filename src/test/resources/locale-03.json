@@ -1,0 +1,10 @@
+{
+	"key": {
+		"subKeyA":"valueA",
+		"subKeyB":"valueB"
+	},
+	"key2": {
+		"subKey2A":"value2A",
+		"subKey2B":"value2B"
+	}
+}

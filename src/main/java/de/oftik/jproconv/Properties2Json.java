@@ -1,7 +1,5 @@
 package de.oftik.jproconv;
 
-import static de.oftik.jproconv.Json2Properties.FILE_NAME_START;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,22 +8,29 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public class Properties2Json {
+	private static final Logger logger = Logger.getLogger(Properties2Json.class.getName());
+
 	final List<String> errors;
 	private final File sourceDir;
 	private final File targetDir;
+	private final String fileNameStart;
+	private final Collection<ProcessStep> processedFiles;
+	private final TargetFileGenerator targetFileGenerator = new TargetFileGenerator(".properties", ".json");
 
-	public Properties2Json(File sourceDir, File targetDir) {
+	public Properties2Json(File sourceDir, File targetDir, String fileNameStart) {
 		errors = new ArrayList<>();
 		if (!sourceDir.exists()) {
 			errors.add(sourceDir + " does not exist");
@@ -40,6 +45,12 @@ public class Properties2Json {
 		}
 		this.sourceDir = sourceDir;
 		this.targetDir = targetDir;
+		this.fileNameStart = fileNameStart;
+		processedFiles = new ArrayList<>();
+	}
+
+	public Collection<ProcessStep> getProcessedFiles() {
+		return processedFiles;
 	}
 
 	public static void main(String[] args) {
@@ -48,9 +59,10 @@ public class Properties2Json {
 			return;
 		}
 
-		final Properties2Json engine = new Properties2Json(new File(args[0]), new File(args[1]));
+		final Properties2Json engine = new Properties2Json(new File(args[0]), new File(args[1]),
+				args.length > 2 ? args[2] : Json2Properties.DEFAULT_FILE_NAME_START);
 		engine.run();
-		System.out.println("Success, have a look at " + args[1]);
+		logger.info("Success, have a look at " + args[1]);
 	}
 
 	void run() {
@@ -62,7 +74,7 @@ public class Properties2Json {
 		recurseInto(sourceDir, sourceDir, targetDir, gson);
 	}
 
-	private static void recurseInto(File rootDir, File sourceFile, File targetDir, Gson gson) {
+	private void recurseInto(File rootDir, File sourceFile, File targetDir, Gson gson) {
 		if (sourceFile.isDirectory()) {
 			for (File f : sourceFile.listFiles()) {
 				recurseInto(rootDir, f, targetDir, gson);
@@ -75,37 +87,45 @@ public class Properties2Json {
 		if (!sourceFile.getName().toLowerCase().endsWith(".properties")) {
 			return;
 		}
-		if (!sourceFile.getName().toLowerCase().startsWith(FILE_NAME_START)) {
+		if (!sourceFile.getName().toLowerCase().startsWith(fileNameStart)) {
 			return;
 		}
 		try (FileReader fr = new FileReader(sourceFile); BufferedReader br = new BufferedReader(fr);) {
-			System.out.println("transforming " + sourceFile + " to JSON");
+			logger.info("transforming " + sourceFile + " to JSON");
 			Properties props = new Properties();
 			props.load(br);
+			if (props.isEmpty()) {
+				logger.info("Skipping empty properties " + sourceFile);
+				return;
+			}
 			SortedMap<String, Object> propertyMap = new TreeMap<>();
 			storeInto(props, propertyMap);
 
-			String rootPath = rootDir.getAbsolutePath();
-			String sourcePath = sourceFile.getAbsolutePath();
-			File targetFile = new File(targetDir,
-					sourcePath.substring(rootPath.length()).replace(".properties", ".json"));
+			File targetFile = targetFileGenerator.determineTargetFile(rootDir, sourceFile, targetDir);
 			File parentDir = targetFile.getParentFile();
 			if (!parentDir.exists()) {
 				parentDir.mkdirs();
 			}
 			try (FileWriter jfw = new FileWriter(targetFile); BufferedWriter bjw = new BufferedWriter(jfw);) {
 				gson.toJson(propertyMap, bjw);
+				processedFiles.add(new ProcessStep(sourceFile, targetFile));
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			logger.throwing(Properties2Json.class.getSimpleName(), "recurseInto", ex);
+			processedFiles.add(new ProcessStep(sourceFile, null));
 		}
 	}
 
 	private static void storeInto(Properties props, Map<String, Object> propertyMap) {
 		for (Object key : props.keySet()) {
-			List<String> keys = Arrays.stream(key.toString().split("\\.")).collect(Collectors.toList());
-			findTarget(propertyMap, keys.subList(0, keys.size() - 1)).put(keys.get(keys.size() - 1),
-					props.getProperty(key.toString()));
+			String strKey = key.toString();
+			if (strKey.indexOf('.') == -1) {
+				propertyMap.put(strKey, props.get(strKey));
+			} else {
+				List<String> keys = Arrays.stream(strKey.split("\\.")).collect(Collectors.toList());
+				findTarget(propertyMap, keys.subList(0, keys.size() - 1)).put(keys.get(keys.size() - 1),
+						props.getProperty(strKey));
+			}
 		}
 	}
 
@@ -123,7 +143,7 @@ public class Properties2Json {
 
 	private static void printErrors(List<String> errors) {
 		for (String err : errors) {
-			System.out.println("ERROR " + err);
+			logger.severe("ERROR " + err);
 		}
 	}
 

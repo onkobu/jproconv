@@ -2,17 +2,37 @@ package de.oftik.jproconv;
 
 import java.io.File;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+
 public class JProConv {
-	public static void main(String[] args) {
-		if (args == null || args.length < 2 || args.length > 3) {
+	// create Options object
+	private static final Options options = new Options();
+
+	static {
+		options.addOption(Option.builder("r").desc("Turn .properties into JSON = reversed operation.").build());
+		options.addOption(
+				Option.builder("p").longOpt("prefix").hasArg().desc("File prefix, default is locale-").build());
+	}
+
+	public static void main(String[] args) throws Exception {
+		CommandLineParser parser = new DefaultParser();
+		CommandLine cmd = parser.parse(options, args);
+
+		if (args == null || args.length < 2) {
 			printUsage();
 			return;
 		}
-		if (args.length == 2) {
-			new Json2Properties(new File(args[0]), new File(args[1])).run();
+
+		if (cmd.hasOption("r")) {
+			new Properties2Json(new File(args[1]), new File(args[2]), cmd.getOptionValue("p")).run();
 			return;
 		} else if (args.length == 3 && "-r".equals(args[0])) {
-			new Properties2Json(new File(args[1]), new File(args[2])).run();
+			new Json2Properties(new File(args[0]), new File(args[1]), cmd.getOptionValue("p")).run();
 			return;
 		}
 		printUsage();
@@ -27,5 +47,8 @@ public class JProConv {
 		System.out.println("are created as necessary to resemble <source-dir>'s structure.\n");
 		System.out.println("The conversion is reversed by specifing -r. Then all locale-*.properties");
 		System.out.println("files in <source-dir> are converted to JSON-format in <target-dir>\n");
+
+		HelpFormatter formatter = new HelpFormatter();
+		formatter.printHelp("jproconv [-r] [-p|--prefix prefix] <source-dir> <target-dir>", options);
 	}
 }
