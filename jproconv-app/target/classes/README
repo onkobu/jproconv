@@ -1,0 +1,12 @@
+JWorkTime
+
+1. Verify you have a Java Runtime Environment
+	- open a command line
+	- type java -version
+	- in case there is an error, find an installation
+	  suitable to your operating system
+	- in all other cases: proceed with #2
+
+2. Invoke either the .bat- or the .sh-file
+	- .bat is for Windows
+	- .sh is for *nix

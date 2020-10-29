@@ -1,0 +1,79 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<name>JProConv Application</name>
+
+	<parent>
+		<groupId>de.oftik</groupId>
+		<artifactId>jproconv</artifactId>
+		<version>1.0.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>jproconv-app</artifactId>
+
+	<dependencies>
+		<dependency>
+			<groupId>de.oftik</groupId>
+			<artifactId>jproconv-converter</artifactId>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<plugins>
+
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>lib/</classpathPrefix>
+							<mainClass>de.oftik.jproconv.JProConv</mainClass>
+						</manifest>
+					</archive>
+					<!-- This unpacks all the submodules, overwriting META-INF/services 
+						if name is identical -->
+					<!-- descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
+						</descriptorRefs -->
+					<descriptors>
+						<descriptor>src/main/assembly/all-jar.xml</descriptor>
+					</descriptors>
+					<appendAssemblyId>false</appendAssemblyId>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id> <!-- this is used for inheritance merges -->
+						<phase>package</phase> <!-- bind to the packaging phase -->
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>net.nicoulaj.maven.plugins</groupId>
+				<artifactId>checksum-maven-plugin</artifactId>
+				<version>1.8</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>artifacts</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<!-- put your configurations here -->
+					<algorithms>
+						<algorithm>MD5</algorithm>
+						<algorithm>SHA-1</algorithm>
+						<algorithm>SHA-256</algorithm>
+						<algorithm>SHA-512</algorithm>
+					</algorithms>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
